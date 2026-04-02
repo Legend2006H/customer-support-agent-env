@@ -11,8 +11,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all the rest of your project files into the container
 COPY . .
 
-# Expose port 8000 for the FastAPI server
-EXPOSE 8000
+# Expose port 7860 for the FastAPI server (Hugging Face Requirement)
+EXPOSE 7860
 
 # Command to run the FastAPI server when the container starts
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7860"]

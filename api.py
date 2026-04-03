@@ -59,8 +59,8 @@ def home():
             :root { --primary: #2563eb; --bg: #f8fafc; --panel: #ffffff; --text: #1e293b; --border: #e2e8f0; --success: #22c55e; --danger: #ef4444; }
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; }
             .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%; max-width: 1200px; }
-            .docs-btn { background-color: #475569; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: bold; transition: 0.2s; }
-            .docs-btn:hover { background-color: #334155; }
+            .docs-btn { background-color: #2563eb; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: bold; transition: 0.2s; }
+            .docs-btn:hover { background-color: #1d4ed8; }
             .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1200px; width: 100%; }
             .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
             h2 { margin-top: 0; font-size: 18px; color: #0f172a; border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; }

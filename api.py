@@ -196,16 +196,25 @@ def home():
                 const entry = document.createElement('div');
                 entry.className = 'log-entry';
                 
-                // FIX: If the reward is a dictionary, stringify it so it prints beautifully!
+                // NEW FIX: Extract the value and reason beautifully!
                 let rewardText = reward;
                 if (typeof reward === 'object' && reward !== null) {
-                    // If it has a specific score/reason format, you can also format it like: reward.score + " | " + reward.reason
-                    rewardText = JSON.stringify(reward); 
+                    if (reward.value !== undefined && reward.reason !== undefined) {
+                        rewardText = `${reward.value} | <span style="color:#94a3b8; font-weight:normal;">Reason: ${reward.reason}</span>`;
+                    } else {
+                        rewardText = JSON.stringify(reward); 
+                    }
+                }
+
+                // Format the Action slightly cleaner too
+                let actionText = JSON.stringify(actionPayload);
+                if (actionPayload.command) {
+                    actionText = actionPayload.command;
                 }
 
                 entry.innerHTML = `
-                    <div class="log-action">Action: ${JSON.stringify(actionPayload)}</div>
-                    <div class="log-reward">Reward: ${rewardText !== null ? rewardText : 0} ${done ? ' [EPISODE FINISHED]' : ''}</div>
+                    <div class="log-action">Action: ${actionText}</div>
+                    <div class="log-reward">Reward: ${rewardText !== null ? rewardText : 0} ${done ? ' <span style="color:#ef4444;">[EPISODE FINISHED]</span>' : ''}</div>
                 `;
                 logDiv.prepend(entry);
             }

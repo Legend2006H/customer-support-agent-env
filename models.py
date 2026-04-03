@@ -20,8 +20,6 @@ class Observation(BaseModel):
     last_action_error: Optional[str] = Field(default=None, description="Will contain an error message if the agent's last action was invalid.")
 
 class Action(BaseModel):
-    """The specific move the agent wants to make this turn."""
-    
     action_type: Literal[
         "ask_clarifying_question", 
         "classify_issue",          
@@ -30,11 +28,23 @@ class Action(BaseModel):
         "escalate_to_human"
     ] = Field(description="The exact action to perform.")
     
-    # These fields are "Optional" because the agent only uses them if they match the action_type above
-    message_to_customer: Optional[str] = Field(default=None, description="Required if action_type is 'ask_clarifying_question' or 'resolve_ticket'.")
-    category_guess: Optional[Literal["Billing", "Technical", "Refund_Request"]] = Field(default=None, description="Required if action_type is 'classify_issue'.")
-    search_query: Optional[str] = Field(default=None, description="Required if action_type is 'search_kb'.")
+    message_to_customer: Optional[str] = Field(default=None, description="Use if action_type is 'ask_clarifying_question' or 'resolve_ticket'.")
+    category_guess: Optional[Literal["Billing", "Technical", "Refund_Request"]] = Field(default=None, description="Use if action_type is 'classify_issue'.")
+    search_query: Optional[str] = Field(default=None, description="Use if action_type is 'search_kb'.")
 
+    # NEW: This adds an interactive example to the Swagger UI for the judges!
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "action_type": "classify_issue",
+                    "category_guess": "Billing",
+                    "message_to_customer": None,
+                    "search_query": None
+                }
+            ]
+        }
+    }
 class Reward(BaseModel):
     """The feedback score given to the agent after taking an action."""
     

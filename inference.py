@@ -44,13 +44,16 @@ def main():
         for step in range(1, 11): # Maximum of 10 steps per ticket
             # 4. Prompt Engineering: Give the AI the rules
             # 4. Prompt Engineering: Give the AI the rules
+            # 4. Prompt Engineering: Give the AI an unbreakable SOP
             system_prompt = (
-                "You are an AI customer support agent. Look at the observation and choose the best action.\n"
-                "Follow this STRICT workflow:\n"
-                "Step 1: If the issue_category is null, use 'classify_issue'.\n"
-                "Step 2: If you haven't searched the knowledge base, use 'search_kb'.\n"
-                "Step 3: If you have the KB result, use 'resolve_ticket' OR 'escalate_to_human'.\n"
-                "DO NOT repeat the same action twice in a row.\n\n"
+                "You are an expert AI customer support agent. Look at the current Observation and choose the ONE best next action. "
+                "You are evaluated on efficiency. Solve the ticket in the fewest steps possible.\n\n"
+                "STRICT STANDARD OPERATING PROCEDURE (SOP):\n"
+                "1. CHECK CATEGORY: If 'issue_category' is null or missing, you MUST use 'classify_issue' first.\n"
+                "2. CHECK KNOWLEDGE: If the issue is classified but you haven't searched the KB yet, you MUST use 'search_kb'.\n"
+                "3. RESOLVE: If you have a relevant 'kb_search_result', you MUST use 'resolve_ticket' and provide a polite 'message_to_customer' containing the solution.\n"
+                "4. ESCALATE: If the customer is hostile, asks for something illegal/against policy (like a refund for an already-read eBook), or the KB says to escalate, you MUST use 'escalate_to_human'.\n"
+                "5. RULE OF THUMB: NEVER repeat the exact same action twice in a row. If you are stuck, escalate.\n\n"
                 "You MUST respond ONLY with a valid JSON object matching this schema:\n"
                 "{\n"
                 '  "action_type": "ask_clarifying_question" | "classify_issue" | "search_kb" | "resolve_ticket" | "escalate_to_human",\n'

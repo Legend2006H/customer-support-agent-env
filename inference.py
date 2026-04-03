@@ -4,47 +4,40 @@ from openai import OpenAI
 from environment import CustomerSupportEnv
 from models import Action
 
-# 1. Load Environment Variables (Mandatory per Hackathon Rules)
-# The judges' server will inject these variables automatically when they run it.
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1") 
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini") 
-HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY")
+# 1. STRICT HACKATHON VARIABLES
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api-inference.huggingface.co/v1/")
+MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct") 
+HF_TOKEN = os.getenv("HF_TOKEN")
 
-def parse_action_from_response(response_text: str) -> Action:
-    """Cleans the LLM response and parses it into our strict Pydantic Action model."""
-    try:
-        # Strip markdown formatting if the LLM added it (e.g., ```json ... ```)
-        clean_text = response_text.replace("```json", "").replace("```", "").strip()
-        action_dict = json.loads(clean_text)
-        return Action(**action_dict)
-    except Exception as e:
-        print(f"Failed to parse AI response: {response_text}. Error: {e}")
-        # If the AI hallucinates badly, force an escalation to prevent the script from crashing
-        return Action(action_type="escalate_to_human")
+if not HF_TOKEN:
+    raise ValueError("HF_TOKEN environment variable is missing!")
 
-def main():
-    if not HF_TOKEN:
-        print("ERROR: Please set your OPENAI_API_KEY or HF_TOKEN environment variable.")
-        return
+# 2. MANDATORY OPENAI CLIENT INITIALIZATION
+client = OpenAI(
+    base_url=API_BASE_URL,
+    api_key=HF_TOKEN
+)
 
-    # 2. Initialize the AI Client using the OpenAI SDK
-    client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
-    
-    # 3. Initialize your OpenEnv game engine
+def run_baseline():
     env = CustomerSupportEnv()
-    
-    print("Starting Baseline Inference Evaluation...\n")
-    
-    # Run 3 episodes to prove it works on multiple tasks
-    for task_num in range(3): 
-        print(f"--- Episode {task_num + 1} ---")
+    total_score = 0
+    num_episodes = 6 # Hardcoded to your exact ticket count
+
+    print(f"Starting Baseline Evaluation for {num_episodes} tickets...\n")
+
+    for i in range(num_episodes):
         obs = env.reset()
-        print(f"Initial Ticket: {obs.conversation_history[0]}")
-        
-        for step in range(1, 11): # Maximum of 10 steps per ticket
-            # 4. Prompt Engineering: Give the AI the rules
-            # 4. Prompt Engineering: Give the AI the rules
-            # 4. Prompt Engineering: Give the AI an unbreakable SOP
+        done = False
+        step_count = 0
+        final_reward = 0
+
+        # FIX 1: Access Pydantic object attribute with dot notation
+        print(f"--- Ticket: {obs.ticket_id} ---")
+
+        while not done and step_count < 10:
+            step_count += 1
+
+            # 3. THE OPTIMIZED AI BRAIN (SOP)
             system_prompt = (
                 "You are an expert AI customer support agent. Look at the current Observation and choose the ONE best next action. "
                 "You are evaluated on efficiency. Solve the ticket in the fewest steps possible.\n\n"
@@ -52,7 +45,7 @@ def main():
                 "1. CHECK CATEGORY: If 'issue_category' is null or missing, you MUST use 'classify_issue' first.\n"
                 "2. CHECK KNOWLEDGE: If the issue is classified but you haven't searched the KB yet, you MUST use 'search_kb'.\n"
                 "3. RESOLVE: If you have a relevant 'kb_search_result', you MUST use 'resolve_ticket' and provide a polite 'message_to_customer' containing the solution.\n"
-                "4. ESCALATE: If the customer is hostile, asks for something illegal/against policy (like a refund for an already-read eBook), or the KB says to escalate, you MUST use 'escalate_to_human'.\n"
+                "4. ESCALATE: If the customer is hostile, asks for something illegal/against policy, or the KB says to escalate, you MUST use 'escalate_to_human'.\n"
                 "5. RULE OF THUMB: NEVER repeat the exact same action twice in a row. If you are stuck, escalate.\n\n"
                 "You MUST respond ONLY with a valid JSON object matching this schema:\n"
                 "{\n"
@@ -62,30 +55,45 @@ def main():
                 '  "search_query": "..."\n'
                 "}\n"
             )
-            
-            # 5. Call the LLM with the current Observation
-            response = client.chat.completions.create(
-                model=MODEL_NAME,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Current Observation:\n{obs.model_dump_json(indent=2)}"}
-                ],
-                temperature=0.1 # Keep it low so the AI is deterministic and logical
-            )
-            
-            ai_text = response.choices[0].message.content
-            action = parse_action_from_response(ai_text)
-            
-            print(f"Step {step} - AI Decided to: {action.action_type}")
-            
-            # 6. Pass the AI's action into our game engine
-            obs, reward, done, info = env.step(action)
-            
-            print(f"  -> Reward Given: {reward.value:.2f} | Reason: {reward.reason}")
-            
-            if done:
-                print(f"Episode Finished! \n")
+
+            # FIX 2: Use Pydantic's built-in JSON exporter
+            user_prompt = f"Current Observation: {obs.model_dump_json()}"
+
+            try:
+                # 4. USING THE OPENAI CLIENT
+                response = client.chat.completions.create(
+                    model=MODEL_NAME,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    response_format={"type": "json_object"},
+                    temperature=0.1
+                )
+
+                # Parse the AI's JSON response
+                action_json = json.loads(response.choices[0].message.content)
+                print(f"Step {step_count}: Action -> {action_json['action_type']}")
+
+                # Pass action back to the environment
+                action_obj = Action(**action_json)
+                obs, reward, done, info = env.step(action_obj)
+
+                # FIX 3: Reward is also a Pydantic object, access the value with a dot
+                final_reward = reward.value
+
+            except Exception as e:
+                print(f"Model or parsing error: {e}")
                 break
 
+        print(f"Result: Done={done}, Final Reward={final_reward}\n")
+        total_score += final_reward
+
+    # 5. PRINT THE REPRODUCIBLE BASELINE SCORE
+    avg_score = total_score / num_episodes
+    print("========================================")
+    print(f"BASELINE AVERAGE SCORE: {avg_score:.2f} / 1.0")
+    print("========================================")
+
 if __name__ == "__main__":
-    main()
+    run_baseline()

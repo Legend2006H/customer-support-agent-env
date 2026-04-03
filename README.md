@@ -9,25 +9,43 @@ tags:
   - openenv
 ---
 
-# customer-support-agent-env
-# Customer Support Resolution OpenEnv
+# 🎧 Customer Support OpenEnv
 
-## Motivation & Real-World Utility
-This environment simulates a real-world Customer Support scenario where an AI agent must navigate a multi-step conversation. It forces agents to classify issues, query a company knowledge base, and determine whether to resolve or escalate a ticket. This fills a critical gap in evaluating an LLM's ability to adhere strictly to corporate policies rather than hallucinating refunds or solutions.
+## 📖 Environment Description & Motivation
+The **Customer Support OpenEnv** is a realistic, interactive simulation designed to evaluate an AI agent's ability to act as a frontline customer service representative. Instead of toy problems, agents must triage incoming tickets, search an internal knowledge base, interact with simulated users, and decide when to escalate. 
 
-## Action & Observation Space
-* **Observation Space:** Uses strict Pydantic models to track `ticket_id`, `customer_tier` (Standard/VIP), `conversation_history`, and `step_count` (to penalize inefficiency).
-* **Action Space:** Highly structured actions including `classify_issue`, `search_kb`, `ask_clarifying_question`, `resolve_ticket`, and `escalate_to_human`.
+This models the genuine, multi-step reasoning required in modern enterprise support systems, heavily penalizing infinite loops and rewarding efficient task resolution.
 
-## Tasks & Difficulty
-1. **Easy:** A standard customer requesting a billing receipt.
-2. **Medium:** A VIP customer experiencing a technical error requiring specific troubleshooting.
-3. **Hard:** An angry customer demanding an illegal refund, testing the agent's ability to adhere to policy.
+## 🔭 Observation Space
+The environment returns a typed Pydantic `Observation` object containing the complete state of the ticket:
+* `ticket_id` (str): Unique identifier for the support ticket.
+* `customer_tier` (str): The priority level of the user (e.g., Standard, VIP).
+* `issue_category` (str | null): The current classification of the ticket.
+* `conversation_history` (list[dict]): A chronological log of messages between the User and the Agent.
+* `kb_search_result` (str | null): The retrieved document from the internal database.
+* `step_count` (int): Number of actions taken so far.
 
-## Setup & Usage
-1. Clone the repository.
-2. Install dependencies: `pip install -r requirements.txt`
-3. Run the local server: `uvicorn api:app --reload`
+## 🎮 Action Space
+The agent must return a typed Pydantic `Action` object. The primary driver is the `action_type`, which dictates which optional fields are utilized:
+* `classify_issue`: Requires a `category_guess` (Billing, Technical, or Refund_Request).
+* `search_kb`: Requires a `search_query` string.
+* `ask_clarifying_question`: Requires a `message_to_customer` string.
+* `resolve_ticket`: Requires a `message_to_customer` string containing the solution.
+* `escalate_to_human`: Ends the episode immediately.
 
-## Baseline Scores
-Running `inference.py` using `Qwen/Qwen2.5-72B-Instruct` via the Hugging Face Serverless API achieves a reproducible score of **1.0** across all three task difficulties.
+## 📋 Task Descriptions & Difficulty
+The environment evaluates agents across 6 dynamically loaded tasks with varying difficulties:
+1. **Password Reset (Easy):** Deterministic resolution requiring a simple KB search.
+2. **Standard Refund (Medium):** Requires classification, KB search for policy checking, and resolution.
+3. **Vague Complaint (Medium):** The user says "It is broken." The agent must proactively ask a clarifying question before proceeding.
+4. **VIP Outage (Medium/Hard):** Tests if the agent can correctly classify high-urgency technical issues without being distracted by account status keywords.
+5. **Hostile/Policy Violation (Hard):** The user demands a refund for a non-refundable item. The agent must realize the KB contradicts the user and gracefully use `escalate_to_human` rather than arguing.
+
+## 🚀 Setup and Usage Instructions
+
+**1. Clone and Install**
+```bash
+git clone [https://huggingface.co/spaces/Adityashinde0/customer-support-openenv](https://huggingface.co/spaces/Adityashinde0/customer-support-openenv)
+cd customer-support-openenv
+pip install -r requirements.txt
+BASELINE AVERAGE SCORE: 0.98 / 1.0

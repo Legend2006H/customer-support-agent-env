@@ -56,6 +56,7 @@ def home():
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Customer Support OpenEnv</title>
         <style>
+            .action-hint { font-size: 13px; color: #64748b; margin-top: 5px; font-style: italic; }
             :root { --primary: #2563eb; --bg: #f8fafc; --panel: #ffffff; --text: #1e293b; --border: #e2e8f0; --success: #22c55e; --danger: #ef4444; }
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; }
             .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%; max-width: 1200px; }
@@ -101,6 +102,7 @@ def home():
                                 <option value="resolve_ticket">Resolve Ticket</option>
                                 <option value="escalate_to_human">Escalate to Human</option>
                             </select>
+                            <div id="actionHint" class="action-hint"></div>
                         </div>
                         
                         <div class="form-group hidden" id="categoryGroup">
@@ -161,6 +163,16 @@ def home():
                 document.getElementById('searchGroup').classList.add('hidden');
                 document.getElementById('messageGroup').classList.add('hidden');
 
+                // NEW: Dynamic Helper Hints for the judges!
+                const hints = {
+                    'classify_issue': 'Sort the ticket into a category. (Usually the best first step!)',
+                    'search_kb': 'Search the database for policies and troubleshooting steps.',
+                    'ask_clarifying_question': 'Ask the customer for more info. (Careful: Impatient customers penalize you for delays!)',
+                    'resolve_ticket': 'Close the ticket and provide the final solution to the customer.',
+                    'escalate_to_human': 'Transfer the ticket to a human if the customer is hostile or requests policy violations.'
+                };
+                document.getElementById('actionHint').innerText = hints[action];
+
                 if (action === 'classify_issue') document.getElementById('categoryGroup').classList.remove('hidden');
                 if (action === 'search_kb') document.getElementById('searchGroup').classList.remove('hidden');
                 if (action === 'ask_clarifying_question' || action === 'resolve_ticket') document.getElementById('messageGroup').classList.remove('hidden');
@@ -196,7 +208,7 @@ def home():
                 const entry = document.createElement('div');
                 entry.className = 'log-entry';
                 
-                // NEW FIX: Extract the value and reason beautifully!
+                // Extract the reward value and reason beautifully
                 let rewardText = reward;
                 if (typeof reward === 'object' && reward !== null) {
                     if (reward.value !== undefined && reward.reason !== undefined) {
@@ -206,14 +218,26 @@ def home():
                     }
                 }
 
-                // Format the Action slightly cleaner too
-                let actionText = JSON.stringify(actionPayload);
-                if (actionPayload.command) {
-                    actionText = actionPayload.command;
+                // NEW: Translate the raw JSON Action into beautiful English Badges!
+                let formattedAction = "";
+                if (actionPayload.action_type === 'ask_clarifying_question') {
+                    formattedAction = `🗣️ <strong>Asked Question:</strong> "${actionPayload.message_to_customer}"`;
+                } else if (actionPayload.action_type === 'search_kb') {
+                    formattedAction = `🔍 <strong>Searched KB:</strong> "${actionPayload.search_query}"`;
+                } else if (actionPayload.action_type === 'classify_issue') {
+                    formattedAction = `🗂️ <strong>Classified Issue:</strong> ${actionPayload.category_guess}`;
+                } else if (actionPayload.action_type === 'resolve_ticket') {
+                    formattedAction = `✅ <strong>Resolved Ticket:</strong> "${actionPayload.message_to_customer}"`;
+                } else if (actionPayload.action_type === 'escalate_to_human') {
+                    formattedAction = `🚨 <strong>Escalated to Human</strong>`;
+                } else if (actionPayload.command) {
+                    formattedAction = `🔄 <strong>${actionPayload.command}</strong>`;
+                } else {
+                    formattedAction = JSON.stringify(actionPayload);
                 }
 
                 entry.innerHTML = `
-                    <div class="log-action">Action: ${actionText}</div>
+                    <div class="log-action">${formattedAction}</div>
                     <div class="log-reward">Reward: ${rewardText !== null ? rewardText : 0} ${done ? ' <span style="color:#ef4444;">[EPISODE FINISHED]</span>' : ''}</div>
                 `;
                 logDiv.prepend(entry);

@@ -22,6 +22,24 @@
       "customer_tier": "Standard",
       "initial_message": "This digital eBook is terrible! I already downloaded and read it, but I demand a full refund right now or I'm leaving a bad review!",
       "expected_category": "Refund_Request"
+    },
+    "hard1":{
+      "ticket_id": "TKT-404",
+      "customer_tier": "VIP",
+      "initial_message": "I am on the Enterprise plan and my API dashboard is completely blank. It just shows a white screen. I need this fixed immediately, our whole team is blocked.",
+      "expected_category": "Technical"
+    },
+    "medium1":{
+      "ticket_id": "TKT-505",
+      "customer_tier": "Standard",
+      "initial_message": "Hello. It is broken.",
+      "expected_category": "Technical"
+    },
+    "hard2":{
+      "ticket_id": "TKT-606",
+      "customer_tier": "Standard",
+      "initial_message": "I bought the yearly subscription by mistake yesterday instead of the monthly one. Can I get a refund for the difference?",
+      "expected_category": "Refund_Request"
     }
   }
 }
